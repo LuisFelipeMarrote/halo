@@ -2,12 +2,13 @@ package com.pengwingscorp.halo.project.application;
 
 import com.pengwingscorp.halo.project.infrastructure.ProjectRepository;
 import com.pengwingscorp.halo.project.domain.Project;
+import com.pengwingscorp.halo.project.infrastructure.persistence.ProjectJpaEntity;
+import com.pengwingscorp.halo.project.infrastructure.persistence.ProjectJpaMapper;
 import com.pengwingscorp.halo.project.web.dto.ProjectRequest;
 import com.pengwingscorp.halo.project.web.dto.ProjectResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
-import java.util.UUID;
 
 @Service
 public class CreateProject {
@@ -23,12 +24,12 @@ public class CreateProject {
                 .setDescription(projectRequest.description())
                 .setCreateAt(new Date())
                 .build();
-        UUID newProjectId = projectRepository.save(newProject);
+        ProjectJpaEntity projectJpaEntity = projectRepository.save(ProjectJpaMapper.toDatabase(newProject));
         return new ProjectResponse(
-                 newProjectId,
-                 newProject.getName(),
-                 newProject.getDescription(),
-                 newProject.getCreateAt()
+                projectJpaEntity.getId(),
+                projectJpaEntity.getName(),
+                projectJpaEntity.getDescription(),
+                projectJpaEntity.getCreateAt()
         );
     }
 }

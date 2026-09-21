@@ -1,15 +1,22 @@
 package com.pengwingscorp.halo.task.infrastructure;
 
-import com.pengwingscorp.halo.task.domain.EnumTaskStatus;
-import com.pengwingscorp.halo.task.domain.Task;
+import com.pengwingscorp.halo.task.infrastructure.persistence.TaskJpaEntity;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
-public interface TaskRepository {
-    UUID save(Task task);
-    List<Task> findAll(UUID project_id, EnumTaskStatus status); // sem paginação mesmo, fodasse
-    Task findById(UUID project_id, UUID task_id);
-    Task update(Task task);
-    boolean delete(UUID id);
+public interface TaskRepository extends JpaRepository<TaskJpaEntity, UUID> {
+    public Optional<TaskJpaEntity> findByIdAndProjectId(UUID id, UUID project_id);
+    @Query("""
+        SELECT tje FROM TaskJpaEntity tje
+        WHERE tje.project.id = :projectId AND
+            (:status IS NULL OR tje.status = :status)
+    """)
+    public List<TaskJpaEntity> findAllByProjectIdAndStatus(@Param("projectId") UUID project_id, @Param("status") @Nullable String status);
+    public boolean existsByProjectId(UUID project_id);
 }

@@ -1,4 +1,4 @@
-package com.pengwingscorp.halo.baseEntities;
+package com.pengwingscorp.halo.base_entities;
 
 import java.util.UUID;
 

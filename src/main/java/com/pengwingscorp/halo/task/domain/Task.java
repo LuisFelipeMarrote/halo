@@ -1,6 +1,6 @@
 package com.pengwingscorp.halo.task.domain;
 
-import com.pengwingscorp.halo.baseEntities.Entity;
+import com.pengwingscorp.halo.base_entities.Entity;
 import com.pengwingscorp.halo.exception.InvalidStringContent;
 
 import java.util.Date;

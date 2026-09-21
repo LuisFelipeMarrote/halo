@@ -2,10 +2,11 @@ package com.pengwingscorp.halo.project.application;
 
 import com.pengwingscorp.halo.project.exception.ProjectNotFound;
 import com.pengwingscorp.halo.project.infrastructure.ProjectRepository;
-import com.pengwingscorp.halo.project.domain.Project;
-import com.pengwingscorp.halo.project.web.dto.GetProjectRequest;
+import com.pengwingscorp.halo.project.infrastructure.persistence.ProjectJpaEntity;
 import com.pengwingscorp.halo.project.web.dto.ProjectResponse;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class GetProjectById {
@@ -15,16 +16,16 @@ public class GetProjectById {
         this.projectRepository = projectRepository;
     }
 
-    public ProjectResponse execute(GetProjectRequest getProjectRequest) {
-        Project project = this.projectRepository.findById(getProjectRequest.id());
-        if (project == null) {
-            throw new ProjectNotFound(getProjectRequest.id().toString());
-        }
+    public ProjectResponse execute(UUID id) {
+        ProjectJpaEntity projectJpaEntity = this.projectRepository
+                .findById(id)
+                .orElseThrow(() -> new ProjectNotFound(id.toString()));
+        
         return new ProjectResponse(
-                project.getId(),
-                project.getName(),
-                project.getDescription(),
-                project.getCreateAt()
+                projectJpaEntity.getId(),
+                projectJpaEntity.getName(),
+                projectJpaEntity.getDescription(),
+                projectJpaEntity.getCreateAt()
         );
     }
 }

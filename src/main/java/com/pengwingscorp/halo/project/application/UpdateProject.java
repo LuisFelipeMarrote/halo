@@ -3,14 +3,15 @@ package com.pengwingscorp.halo.project.application;
 import com.pengwingscorp.halo.project.exception.ProjectNotFound;
 import com.pengwingscorp.halo.project.infrastructure.ProjectRepository;
 import com.pengwingscorp.halo.project.domain.Project;
+import com.pengwingscorp.halo.project.infrastructure.persistence.ProjectJpaEntity;
+import com.pengwingscorp.halo.project.infrastructure.persistence.ProjectJpaMapper;
 import com.pengwingscorp.halo.project.web.dto.ProjectRequest;
 import com.pengwingscorp.halo.project.web.dto.ProjectResponse;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.UUID;
 
-// NOT TESTED
 @Service
 public class UpdateProject {
     private final ProjectRepository projectRepository;
@@ -18,22 +19,19 @@ public class UpdateProject {
     public UpdateProject(ProjectRepository projectRepository) {
         this.projectRepository = projectRepository;
     }
-
+    @Transactional
     public ProjectResponse execute(UUID id, ProjectRequest projectRequest) {
-        Project project = new Project(
-                id,
-                projectRequest.name(),
-                projectRequest.description(),
-                new Date());
-        Project updatedProject = this.projectRepository.update(project);
-        if (updatedProject == null) {
-            throw new ProjectNotFound(id.toString());
-        }
+        ProjectJpaEntity projectJpaEntity = this.projectRepository
+                .findById(id)
+                .orElseThrow(() -> new ProjectNotFound(id.toString()));
+        Project project = ProjectJpaMapper.toDomain(projectJpaEntity);
+        project.update(projectRequest.name(), projectRequest.description());
+        ProjectJpaEntity updatedProjectJpaEntity = this.projectRepository.save(ProjectJpaMapper.toDatabase(project));
         return new ProjectResponse(
-                project.getId(),
-                project.getName(),
-                project.getDescription(),
-                project.getCreateAt()
+                updatedProjectJpaEntity.getId(),
+                updatedProjectJpaEntity.getName(),
+                updatedProjectJpaEntity.getDescription(),
+                updatedProjectJpaEntity.getCreateAt()
         );
     }
 

@@ -1,7 +1,7 @@
 package com.pengwingscorp.halo.project.application;
 
 import com.pengwingscorp.halo.project.infrastructure.ProjectRepository;
-import com.pengwingscorp.halo.project.domain.Project;
+import com.pengwingscorp.halo.project.infrastructure.persistence.ProjectJpaEntity;
 import com.pengwingscorp.halo.project.web.dto.ProjectResponse;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +17,13 @@ public class ListProjects {
     }
 
     public ArrayList<ProjectResponse> execute() {
-        List<Project> projects = this.projectRepository.findAll();
+        List<ProjectJpaEntity> projectJpaEntityList = this.projectRepository.findAll();
         ArrayList<ProjectResponse> listProjectsResponse = new ArrayList<ProjectResponse>();
-        projects.forEach((project) -> listProjectsResponse.add(new ProjectResponse(
-                project.getId(),
-                project.getName(),
-                project.getDescription(),
-                project.getCreateAt()
+        projectJpaEntityList.forEach((projectJpaEntity) -> listProjectsResponse.add(new ProjectResponse(
+                projectJpaEntity.getId(),
+                projectJpaEntity.getName(),
+                projectJpaEntity.getDescription(),
+                projectJpaEntity.getCreateAt()
         )));
 
         return listProjectsResponse;

@@ -1,6 +1,6 @@
 package com.pengwingscorp.halo.project.domain;
 
-import com.pengwingscorp.halo.baseEntities.Entity;
+import com.pengwingscorp.halo.base_entities.Entity;
 import com.pengwingscorp.halo.exception.InvalidStringContent;
 
 import java.util.Date;
@@ -9,7 +9,7 @@ import java.util.UUID;
 public class Project extends Entity {
     private String name;
     private String description;
-    private Date createAt;
+    private final Date createAt;
 
     public Project(UUID id, String name, String description, Date createAt) {
         setId(id);
@@ -19,9 +19,9 @@ public class Project extends Entity {
     }
 
     public Project(Builder builder) {
-        this.name = format(validate(builder.nome, "nome"));
-        this.description = format(validate(builder.description, "description"));
-        this.createAt = builder.createAt;
+        name = format(validate(builder.nome, "nome"));
+        description = format(validate(builder.description, "description"));
+        createAt = builder.createAt;
     }
 
     private String validate(String value, String field) {
@@ -32,6 +32,10 @@ public class Project extends Entity {
     private String format(String value) {
         return value.trim();
     }
+
+    public void update(String name, String description) {
+        this.name = format(validate(name, "nome"));
+        this.description = format(validate(description, "description"));      }
 
     public String getName() {
         return name;

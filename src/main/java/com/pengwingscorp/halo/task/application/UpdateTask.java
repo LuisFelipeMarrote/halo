@@ -1,15 +1,14 @@
 package com.pengwingscorp.halo.task.application;
 
-import com.pengwingscorp.halo.task.domain.EnumTaskStatus;
 import com.pengwingscorp.halo.task.domain.Task;
 import com.pengwingscorp.halo.task.exception.TaskNotFound;
 import com.pengwingscorp.halo.task.infrastructure.TaskRepository;
-import com.pengwingscorp.halo.task.web.dto.CreateTaskResponse;
+import com.pengwingscorp.halo.task.infrastructure.persistence.TaskJpaEntity;
+import com.pengwingscorp.halo.task.infrastructure.persistence.TaskJpaMapper;
 import com.pengwingscorp.halo.task.web.dto.TaskRequest;
 import com.pengwingscorp.halo.task.web.dto.TaskResponse;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.UUID;
 
 @Service
@@ -21,19 +20,19 @@ public class UpdateTask {
     }
 
     public TaskResponse execute(UUID project_id, UUID task_id, TaskRequest taskRequest) {
-        Task task = this.taskRepository.findById(project_id, task_id);
-        if (task == null ) {
-            throw new TaskNotFound(task_id.toString());
-        }
+        TaskJpaEntity taskJpaEntity = this.taskRepository
+                .findByIdAndProjectId(task_id, project_id)
+                .orElseThrow(() -> new TaskNotFound(task_id.toString()));
+        Task task = TaskJpaMapper.toDomain(taskJpaEntity);
         task.update(taskRequest.title(), taskRequest.description());
-        Task updatedTask = this.taskRepository.update(task);
+        TaskJpaEntity updatedTaskJpaEntity = this.taskRepository.save(TaskJpaMapper.toDatabase(task, taskJpaEntity.getProject()));
         return new TaskResponse(
-                updatedTask.getId(),
-                updatedTask.getTitle(),
-                updatedTask.getDescription(),
-                updatedTask.getStatus(),
-                updatedTask.getProject_id(),
-                updatedTask.getCreateAt()
+                updatedTaskJpaEntity.getId(),
+                updatedTaskJpaEntity.getTitle(),
+                updatedTaskJpaEntity.getDescription(),
+                updatedTaskJpaEntity.getStatus(),
+                updatedTaskJpaEntity.getProject().getId(),
+                updatedTaskJpaEntity.getCreateAt()
 
         );
     }
