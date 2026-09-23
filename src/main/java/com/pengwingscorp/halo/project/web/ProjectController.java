@@ -2,12 +2,15 @@ package com.pengwingscorp.halo.project.web;
 
 import com.pengwingscorp.halo.project.application.*;
 import com.pengwingscorp.halo.project.web.dto.*;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.UUID;
 
+@Validated
 @RestController
 @RequestMapping("/v1/projects")
 public class ProjectController {
@@ -27,7 +30,7 @@ public class ProjectController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ProjectResponse createProject(@RequestBody ProjectRequest projectRequest) {
+    public ProjectResponse createProject(@Valid @RequestBody ProjectRequest projectRequest) {
         return createProject.execute(projectRequest);
     }
 
@@ -47,7 +50,7 @@ public class ProjectController {
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public ProjectResponse updateProject(@PathVariable("id") String id, @RequestBody ProjectRequest projectRequest) {
+    public ProjectResponse updateProject(@PathVariable("id") String id, @Valid @RequestBody ProjectRequest projectRequest) {
         return updateProject.execute(UUID.fromString(id), projectRequest);
     }
 

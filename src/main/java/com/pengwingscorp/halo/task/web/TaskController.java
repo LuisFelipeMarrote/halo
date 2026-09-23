@@ -6,6 +6,7 @@ import com.pengwingscorp.halo.task.exception.InvalidTaskStatusArg;
 import com.pengwingscorp.halo.task.web.dto.ChangeTaskStatusRequest;
 import com.pengwingscorp.halo.task.web.dto.TaskRequest;
 import com.pengwingscorp.halo.task.web.dto.TaskResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,7 +41,7 @@ public class TaskController {
 
     @PostMapping()
     @ResponseStatus(HttpStatus.CREATED)
-    public TaskResponse create(@PathVariable("projectId") String projectId, @RequestBody TaskRequest taskRequest) {
+    public TaskResponse create(@PathVariable("projectId") String projectId, @Valid @RequestBody TaskRequest taskRequest) {
         return createTask.execute(UUID.fromString(projectId), taskRequest);
     }
 
@@ -67,13 +68,13 @@ public class TaskController {
 
     @PutMapping("/{taskId}")
     @ResponseStatus(HttpStatus.OK)
-    public TaskResponse update(@PathVariable("projectId") String projectId, @PathVariable("taskId") String taskId, @RequestBody TaskRequest taskRequest) {
+    public TaskResponse update(@PathVariable("projectId") String projectId, @PathVariable("taskId") String taskId, @Valid @RequestBody TaskRequest taskRequest) {
         return updateTask.execute(UUID.fromString(projectId), UUID.fromString(taskId), taskRequest);
     }
 
     @PatchMapping("/{taskId}/status")
     @ResponseStatus(HttpStatus.OK)
-    public void changeStatus(@PathVariable("projectId") String projectId, @PathVariable("taskId") String taskId, @RequestBody ChangeTaskStatusRequest dto) {
+    public void changeStatus(@PathVariable("projectId") String projectId, @PathVariable("taskId") String taskId, @Valid @RequestBody ChangeTaskStatusRequest dto) {
         if(!EnumTaskStatus.isValidType(dto.status())) throw new InvalidTaskStatusArg(dto.status());
         changeTaskStatus.execute(UUID.fromString(projectId), UUID.fromString(taskId), EnumTaskStatus.valueOf(dto.status()));
     }

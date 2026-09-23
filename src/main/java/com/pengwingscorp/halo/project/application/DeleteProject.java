@@ -25,7 +25,7 @@ public class DeleteProject {
         ProjectJpaEntity projectJpaEntity = projectRepository
                 .findById(id)
                 .orElseThrow(() -> new ProjectNotFound(id.toString()));
-        if(!taskRepository.existsByProjectId(id)) throw new ProjectCannotBeDestroyed(id.toString());
+        if(taskRepository.existsByProjectId(id)) throw new ProjectCannotBeDestroyed(id.toString());
         projectRepository.delete(projectJpaEntity);
     }
 }

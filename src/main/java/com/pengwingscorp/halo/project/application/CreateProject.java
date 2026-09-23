@@ -20,7 +20,7 @@ public class CreateProject {
 
     public ProjectResponse execute(ProjectRequest projectRequest) {
         Project newProject = new Project.Builder()
-                .setNome(projectRequest.description())
+                .setNome(projectRequest.name())
                 .setDescription(projectRequest.description())
                 .setCreateAt(new Date())
                 .build();

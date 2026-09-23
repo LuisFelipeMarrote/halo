@@ -52,7 +52,7 @@ public class Project extends Entity {
     public static class Builder{
         private String nome;
         private String description;
-        private Date createAt;
+        private Date createAt = new Date();
 
         public Project.Builder setNome(String nome) {
             this.nome = nome;

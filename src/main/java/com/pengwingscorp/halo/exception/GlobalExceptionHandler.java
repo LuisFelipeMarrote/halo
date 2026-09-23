@@ -6,6 +6,7 @@ import com.pengwingscorp.halo.task.exception.InvalidTaskStatusArg;
 import com.pengwingscorp.halo.task.exception.TaskNotFound;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -76,5 +77,29 @@ public class GlobalExceptionHandler {
                 .body(errorResponse);
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
+            MethodArgumentNotValidException exception) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                "BAD_REQUEST",
+                "Not valid or missing field: " + (exception.getFieldError().getField())
+        );
 
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleDefaultException(
+            Exception exception) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                "EXCEPTION",
+                exception.getMessage()
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
 }
