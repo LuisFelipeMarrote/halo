@@ -2,6 +2,7 @@ package com.pengwingscorp.halo.exception;
 
 import com.pengwingscorp.halo.project.exception.ProjectCannotBeDestroyed;
 import com.pengwingscorp.halo.project.exception.ProjectNotFound;
+import com.pengwingscorp.halo.security.exception.UserNotFound;
 import com.pengwingscorp.halo.task.exception.InvalidTaskStatusArg;
 import com.pengwingscorp.halo.task.exception.TaskNotFound;
 import org.springframework.http.HttpStatus;
@@ -87,6 +88,19 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
+                .body(errorResponse);
+    }
+
+    @ExceptionHandler(UserNotFound.class)
+    public ResponseEntity<ErrorResponse> handleUserNotFound(
+            UserNotFound exception) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                "UNAUTHORIZED_USER",
+                "User not found"
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
                 .body(errorResponse);
     }
 

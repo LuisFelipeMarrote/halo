@@ -5,8 +5,21 @@ import com.pengwingscorp.halo.project.infrastructure.persistence.ProjectJpaEntit
 import com.pengwingscorp.halo.project.web.dto.ProjectRequest;
 import com.pengwingscorp.halo.task.infrastructure.TaskRepository;
 import com.pengwingscorp.halo.task.infrastructure.persistence.TaskJpaEntity;
+import com.pengwingscorp.halo.user.application.LoginUser;
+import com.pengwingscorp.halo.user.application.RegisterUser;
+import com.pengwingscorp.halo.user.domain.User;
+import com.pengwingscorp.halo.user.domain.UserRole;
+import com.pengwingscorp.halo.user.infrastructure.UserRepository;
+import com.pengwingscorp.halo.user.infrastructure.persistence.UserJpaEntity;
+import com.pengwingscorp.halo.user.infrastructure.persistence.UserJpaMapper;
+import com.pengwingscorp.halo.user.web.dto.AuthenticationDTO;
+import com.pengwingscorp.halo.user.web.dto.TokenDTO;
+import com.pengwingscorp.halo.user.web.dto.UserRequest;
+import com.pengwingscorp.halo.user.web.dto.UserResponse;
 import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -28,6 +41,7 @@ import java.util.UUID;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class ApiProjectTest {
 
@@ -35,13 +49,34 @@ class ApiProjectTest {
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
     private final ObjectMapper objectMapper;
+    private final RegisterUser registerUser;
+    private final LoginUser loginUser;
+    private String token;
 
-    public ApiProjectTest(MockMvc mockMvc, ProjectRepository projectRepository, TaskRepository taskRepository, ObjectMapper objectMapper) {
+    public ApiProjectTest(MockMvc mockMvc, ProjectRepository projectRepository, TaskRepository taskRepository, ObjectMapper objectMapper, UserRepository userRepository, RegisterUser registerUser, LoginUser loginUser) {
         this.mockMvc = mockMvc;
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.objectMapper = objectMapper;
+        this.registerUser = registerUser;
+        this.loginUser = loginUser;
     }
+
+    @BeforeAll
+    void getToken() {
+        String login = "luis";
+        String password = "oi123";
+        UserRequest userRequest = new UserRequest(
+                login,
+                password,
+             UserRole.ADMIN
+        );
+        UserResponse userResponse = registerUser.execute(userRequest);
+        TokenDTO tokenDto = loginUser.execute(new AuthenticationDTO(login, password));
+        token = tokenDto.token();
+    }
+
+
 
     @Test
     void shouldReturn404NotFoundProject() throws Exception {
@@ -50,9 +85,8 @@ class ApiProjectTest {
         boolean exists = projectRepository.existsById(project_id);
         assertFalse(exists);
         // Act & Assert
-        mockMvc.perform(get(
-                "/v1/projects/{projectId}",
-                        project_id))
+        mockMvc.perform(get("/v1/projects/{projectId}", project_id)
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("PROJECT_NOT_FOUND"));
     }
@@ -64,7 +98,8 @@ class ApiProjectTest {
         // Act & Assert
         mockMvc.perform(post("/v1/projects")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(projectRequest)))
+                        .content(objectMapper.writeValueAsString(projectRequest))
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.createAt").exists())
@@ -80,7 +115,8 @@ class ApiProjectTest {
         // Act & Assert
         mockMvc.perform(post("/v1/projects")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(malformedProjectRequest)))
+                        .content(objectMapper.writeValueAsString(malformedProjectRequest))
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
     }
@@ -91,7 +127,8 @@ class ApiProjectTest {
         ProjectJpaEntity projectJpaEntity = createProject();
 
         // Act & Assert
-        mockMvc.perform(get("/v1/projects/{id}", projectJpaEntity.getId()))
+        mockMvc.perform(get("/v1/projects/{id}", projectJpaEntity.getId())
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(projectJpaEntity.getId().toString()))
                 .andExpect(jsonPath("$.createAt").value(projectJpaEntity.getCreateAt().toInstant().toString()))
@@ -105,7 +142,8 @@ class ApiProjectTest {
         ProjectJpaEntity projectJpaEntity = createProject();
 
         // Act & Assert
-        mockMvc.perform(delete("/v1/projects/{id}", projectJpaEntity.getId()))
+        mockMvc.perform(delete("/v1/projects/{id}", projectJpaEntity.getId())
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
     }
 
@@ -125,7 +163,8 @@ class ApiProjectTest {
         taskRepository.saveAndFlush(taskJpaEntity);
 
         // Act & Assert
-        mockMvc.perform(delete("/v1/projects/{id}", projectJpaEntity.getId()))
+        mockMvc.perform(delete("/v1/projects/{id}", projectJpaEntity.getId())
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("PROJECT_CANNOT_BE_DESTROYED"));
 

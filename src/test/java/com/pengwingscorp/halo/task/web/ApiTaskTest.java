@@ -6,8 +6,17 @@ import com.pengwingscorp.halo.task.infrastructure.TaskRepository;
 import com.pengwingscorp.halo.task.infrastructure.persistence.TaskJpaEntity;
 import com.pengwingscorp.halo.task.web.dto.ChangeTaskStatusRequest;
 import com.pengwingscorp.halo.task.web.dto.TaskRequest;
+import com.pengwingscorp.halo.user.application.LoginUser;
+import com.pengwingscorp.halo.user.application.RegisterUser;
+import com.pengwingscorp.halo.user.domain.UserRole;
+import com.pengwingscorp.halo.user.web.dto.AuthenticationDTO;
+import com.pengwingscorp.halo.user.web.dto.TokenDTO;
+import com.pengwingscorp.halo.user.web.dto.UserRequest;
+import com.pengwingscorp.halo.user.web.dto.UserResponse;
 import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -28,23 +37,43 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @TestConstructor(autowireMode = TestConstructor.AutowireMode.ALL)
 class ApiTaskTest {
     private final MockMvc mockMvc;
     private final ProjectRepository projectRepository;
     private final TaskRepository taskRepository;
     private final ObjectMapper objectMapper;
+    private final RegisterUser registerUser;
+    private final LoginUser loginUser;
+    private String token;
 
     public ApiTaskTest(
             MockMvc mockMvc,
             ProjectRepository projectRepository,
             TaskRepository taskRepository,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper, RegisterUser registerUser, LoginUser loginUser
     ) {
         this.mockMvc = mockMvc;
         this.projectRepository = projectRepository;
         this.taskRepository = taskRepository;
         this.objectMapper = objectMapper;
+        this.registerUser = registerUser;
+        this.loginUser = loginUser;
+    }
+
+    @BeforeAll
+    void getToken() {
+        String login = "luis";
+        String password = "oi123";
+        UserRequest userRequest = new UserRequest(
+                login,
+                password,
+                UserRole.ADMIN
+        );
+        UserResponse userResponse = registerUser.execute(userRequest);
+        TokenDTO tokenDto = loginUser.execute(new AuthenticationDTO(login, password));
+        token = tokenDto.token();
     }
 
     @Test
@@ -55,8 +84,8 @@ class ApiTaskTest {
         boolean exists = taskRepository.existsById(task_id);
         assertFalse(exists);
         // Act & Assert
-        mockMvc.perform(get(
-                        "/v1/projects/{projectId}/tasks/{taskId}", projectJpaEntity.getId(), task_id))
+        mockMvc.perform(get("/v1/projects/{projectId}/tasks/{taskId}", projectJpaEntity.getId(), task_id)
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TASK_NOT_FOUND"));
     }
@@ -69,7 +98,8 @@ class ApiTaskTest {
         // Act & Assert
         mockMvc.perform(post("/v1/projects/{projectId}/tasks", projectJpaEntity.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(taskRequest)))
+                        .content(objectMapper.writeValueAsString(taskRequest))
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
                 .andExpect(jsonPath("$.createAt").exists())
@@ -88,7 +118,8 @@ class ApiTaskTest {
         // Act & Assert
         mockMvc.perform(post("/v1/projects/{projectId}/tasks", projectJpaEntity.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(malformedProjectRequest)))
+                        .content(objectMapper.writeValueAsString(malformedProjectRequest))
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("BAD_REQUEST"));
     }
@@ -101,9 +132,10 @@ class ApiTaskTest {
         TaskRequest taskRequest = new TaskRequest("current title", "current description");
         // Act & Assert
         mockMvc.perform(put("/v1/projects/{projectId}/tasks/{taskId}", projectJpaEntity.getId(),
-                        taskJpaEntity.getId())
+                            taskJpaEntity.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(taskRequest)))
+                        .content(objectMapper.writeValueAsString(taskRequest))
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(taskJpaEntity.getId().toString()))
                 .andExpect(jsonPath("$.createAt").value(taskJpaEntity.getCreateAt().toInstant().toString()))
@@ -120,8 +152,9 @@ class ApiTaskTest {
         TaskJpaEntity taskJpaEntity = createTask(projectJpaEntity);
         // Act & Assert
         mockMvc.perform(get("/v1/projects/{id}/tasks/{taskId}",
-                        projectJpaEntity.getId(),
-                        taskJpaEntity.getId()))
+                            projectJpaEntity.getId(),
+                            taskJpaEntity.getId())
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(taskJpaEntity.getId().toString()))
                 .andExpect(jsonPath("$.createAt").value(taskJpaEntity.getCreateAt().toInstant().toString()))
@@ -138,8 +171,9 @@ class ApiTaskTest {
         TaskJpaEntity taskJpaEntity = createTask(projectJpaEntity);
         // Act & Assert
         mockMvc.perform(delete("/v1/projects/{projectId}/tasks/{taskId}",
-                        projectJpaEntity.getId(),
-                        taskJpaEntity.getId()))
+                            projectJpaEntity.getId(),
+                            taskJpaEntity.getId())
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
     }
 
@@ -151,10 +185,11 @@ class ApiTaskTest {
         ChangeTaskStatusRequest changeTaskStatusRequest = new ChangeTaskStatusRequest("IN_PROGRESS");
         // Act
         mockMvc.perform(patch("/v1/projects/{projectId}/tasks/{taskId}/status",
-                        projectJpaEntity.getId(),
-                        taskJpaEntity.getId())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(changeTaskStatusRequest)))
+                            projectJpaEntity.getId(),
+                            taskJpaEntity.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(changeTaskStatusRequest))
+                        .header("authorization", "Bearer " + token))
                 .andExpect(status().isOk());
         // Assert
         TaskJpaEntity checkTaskJpaEntity = taskRepository.findByIdAndProjectId(
